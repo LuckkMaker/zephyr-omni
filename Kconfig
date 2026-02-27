@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 LuckkMaker
+
+menuconfig OMNI
+  bool "Omni"
+  default n
+  help
+    Enable Omni. This module is the core of the Omni system.
+
+if OMNI
+
+mainmenu "Omni Configuration"
+
+# source "Kconfig.omni"
+
+endif # OMNI

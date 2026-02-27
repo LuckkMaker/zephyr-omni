@@ -1,0 +1,5 @@
+name: omni
+
+build:
+  cmake: .
+  kconfig: Kconfig
