@@ -11,6 +11,6 @@ if OMNI
 
 mainmenu "Omni Configuration"
 
-# source "Kconfig.omni"
+rsource "Kconfig.cmsisdap"
 
 endif # OMNI
