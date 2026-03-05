@@ -9,8 +9,6 @@ menuconfig OMNI
 
 if OMNI
 
-mainmenu "Omni Configuration"
-
-rsource "Kconfig.cmsisdap"
+rsource "subsys/Kconfig"
 
 endif # OMNI

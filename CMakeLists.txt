@@ -9,13 +9,5 @@ cmake_minimum_required(VERSION 3.20.0)
 zephyr_library()
 zephyr_include_directories(include)
 
-# components
-# cmsis-dap
-if(CONFIG_OMNI_DAP)
-    zephyr_include_directories(components/dap/include)
-    # zephyr_include_directories(components/cmsis-dap/template/zephyr)
-
-    zephyr_library_sources(
-        components/dap/src/dap_backend_usb.c
-    )
-endif()
+add_subdirectory(subsys)
+# add_subdirectory(drivers)

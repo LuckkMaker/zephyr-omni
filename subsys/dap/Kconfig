@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 LuckkMaker
+
+menuconfig OMNI_DAP
+	bool "Debug Access Port support [EXPERIMENTAL]"
+	select EXPERIMENTAL
+	select DP_DRIVER
+	help
+	  Debug Access Port support
+
+if OMNI_DAP
+
+config DAP_SWD
+	bool "CMSIS-DAP SWD support"
+	help
+	  CMSIS-DAP SWD support
+
+config DAP_JTAG
+	bool "CMSIS-DAP JTAG support"
+	help
+	  CMSIS-DAP JTAG support
+
+config DAP_PACKET_COUNT
+	int "Maximum packet buffers for request and response data."
+	default 4
+	range 1 $(UINT8_MAX)
+	help
+	  Maximum packet buffers for request and response data.
+
+config DAP_BACKEND_USB_QUEUE
+	bool "USB backend with command queue (CMSIS-DAP Queue Commands)"
+	depends on USB_DEVICE_STACK_NEXT
+	help
+	  DAP USB backend with request/response queues and DAP_QueueCommands (0x7E)
+	  support. Allows multiple packets to be queued before execution.
+
+module = DAP
+module-str = dap
+source "$(ZEPHYR_BASE)/subsys/logging/Kconfig.template.log_config"
+
+endif # OMNI_DAP
