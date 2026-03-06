@@ -143,9 +143,7 @@ static void dap_queue_process_work(struct k_work *work)
 				req[0] = ID_DAP_EXECUTE_COMMANDS;
 			}
 			resp_len = dap_execute_command(data->dap_ctx, req, resp);
-			if (resp_len > DAP_QUEUE_PACKET_SIZE_MAX) {
-				resp_len = DAP_QUEUE_PACKET_SIZE_MAX;
-			}
+			resp_len = MIN((uint16_t)resp_len, DAP_QUEUE_PACKET_SIZE_MAX);
 			data->response_len[data->response_index_i] = (uint16_t)resp_len;
 
 			data->request_index_o++;
@@ -210,6 +208,7 @@ static int dap_queue_request_handler(struct usbd_class_data *c_data, struct net_
 
 			if (buf->data[0] == ID_DAP_TRANSFER_ABORT) {
 				/* Optional: set DAP_TransferAbort if supported by cmsis_dap.c */
+				//TODO: Set DAP_TransferAbort = 1U;
 			}
 			k_work_submit(&data->process_work);
 		}

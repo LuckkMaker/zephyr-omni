@@ -20,6 +20,13 @@ config DAP_JTAG
 	help
 	  CMSIS-DAP JTAG support
 
+config DAP_BACKEND_USB_QUEUE
+	bool "USB backend with command queue (CMSIS-DAP Queue Commands)"
+	depends on USB_DEVICE_STACK_NEXT
+	help
+	  DAP USB backend with request/response queues and DAP_QueueCommands (0x7E)
+	  support. Allows multiple packets to be queued before execution.
+
 config DAP_PACKET_COUNT
 	int "Maximum packet buffers for request and response data."
 	default 4
@@ -27,12 +34,33 @@ config DAP_PACKET_COUNT
 	help
 	  Maximum packet buffers for request and response data.
 
-config DAP_BACKEND_USB_QUEUE
-	bool "USB backend with command queue (CMSIS-DAP Queue Commands)"
-	depends on USB_DEVICE_STACK_NEXT
-	help
-	  DAP USB backend with request/response queues and DAP_QueueCommands (0x7E)
-	  support. Allows multiple packets to be queued before execution.
+config DAP_PROBE_VENDOR
+	string "Probe vendor"
+	default "Omni"
+
+config DAP_PROBE_NAME
+	string "Probe name"
+	default "CMSIS-DAP"
+
+config DAP_PROBE_FW_VER
+	string "Probe firmware version"
+	default "0.1.0"
+
+config DAP_DEVICE_VENDOR
+	string "Target device vendor"
+	default ""
+
+config DAP_DEVICE_NAME
+	string "Target device name"
+	default ""
+
+config DAP_BOARD_VENDOR
+	string "Target board vendor"
+	default ""
+
+config DAP_BOARD_NAME
+	string "Target board name"
+	default ""
 
 module = DAP
 module-str = dap

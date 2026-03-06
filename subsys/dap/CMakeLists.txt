@@ -9,3 +9,5 @@ zephyr_library()
 zephyr_library_sources(src/cmsis_dap.c)
 
 zephyr_library_sources_ifdef(CONFIG_DAP_BACKEND_USB_QUEUE src/dap_backend_usb.c)
+
+zephyr_linker_sources(DATA_SECTIONS dap_data.ld)
