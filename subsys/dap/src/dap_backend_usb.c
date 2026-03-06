@@ -142,7 +142,7 @@ static void dap_queue_process_work(struct k_work *work)
 			if (req[0] == ID_DAP_QUEUE_COMMANDS) {
 				req[0] = ID_DAP_EXECUTE_COMMANDS;
 			}
-			resp_len = dap_execute_command(req, resp);
+			resp_len = dap_execute_command(data->dap_ctx, req, resp);
 			if (resp_len > DAP_QUEUE_PACKET_SIZE_MAX) {
 				resp_len = DAP_QUEUE_PACKET_SIZE_MAX;
 			}
@@ -273,9 +273,9 @@ static void dap_queue_enable(struct usbd_class_data *const c_data)
 
 	if (!atomic_test_and_set_bit(&data->state, DAP_QUEUE_FUNCTION_ENABLED)) {
 		if (usbd_bus_speed(uds_ctx) == USBD_SPEED_HS) {
-			dap_update_pkt_size(512);
+			dap_update_pkt_size(data->dap_ctx, 512);
 		} else {
-			dap_update_pkt_size(64);
+			dap_update_pkt_size(data->dap_ctx, 64);
 		}
 		data->class_data = c_data;
 

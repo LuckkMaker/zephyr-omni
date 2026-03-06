@@ -204,12 +204,12 @@
 #define SWD_SEQUENCE_DIN 0x80U // SWDIO capture
 
 struct dap_context {
-#ifdef CONFIG_DAP_SWD
-	struct device *swdp_dev;
-#endif
-#ifdef CONFIG_DAP_JTAG
-	struct device *jtagdp_dev;
-#endif
+	/** Name of the DAP device */
+	const char *name;
+	/** Pointer to SWDP device */
+	const struct device *swdp_dev;
+	/** Pointer to JTAGDP device */
+	const struct device *jtagdp_dev;
 	atomic_t state;
 	uint8_t debug_port;								// Debug Port
 	uint8_t fast_clock;								// Fast Clock Flag
@@ -243,7 +243,7 @@ struct dap_context {
 };
 
 /**
- * @brief Define a DAP context structure
+ * @brief Define a DAP device context structure
  * 
  * Example of use:
  * 
@@ -257,14 +257,15 @@ struct dap_context {
  * @param swdp_dev    Pointer to SWDP device structure
  * @param jtagdp_dev  Pointer to JTAGDP device structure
  */
-#define DAP_DEFINE(device_name, swdp_dev, jtagdp_dev) \
+#define DAP_DEVICE_DEFINE(device_name, _swdp_dev, _jtagdp_dev) \
 	static STRUCT_SECTION_ITERABLE(dap_context, device_name) = { \
 		.name = STRINGIFY(device_name), \
-		IF_ENABLED(CONFIG_DAP_SWD, (.swdp_dev = swdp_dev,)) \
-		IF_ENABLED(CONFIG_DAP_JTAG, (.jtagdp_dev = jtagdp_dev,)) \
+		IF_ENABLED(CONFIG_DAP_SWD, (.swdp_dev = _swdp_dev,)) \
+		IF_ENABLED(CONFIG_DAP_JTAG, (.jtagdp_dev = _jtagdp_dev,)) \
 	}
 
-int dap_setup(struct dap_context *ctx);
-uint32_t dap_execute_command(struct dap_context *ctx, const uint8_t *request, uint8_t *response);
+int dap_setup(struct dap_context *const ctx);
+void dap_update_pkt_size(struct dap_context *const ctx, const uint16_t pkt_size);
+uint32_t dap_execute_command(struct dap_context *const ctx, const uint8_t *request, uint8_t *response);
 
 #endif /* ZEPHYR_INCLUDE_CMSIS_DAP_H_ */
