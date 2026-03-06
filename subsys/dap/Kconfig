@@ -18,7 +18,31 @@ config DAP_SWD
 config DAP_JTAG
 	bool "CMSIS-DAP JTAG support"
 	help
-	  CMSIS-DAP JTAG support
+	  CMSIS-DAP JTAG 
+	  
+config DAP_JTAG_DEV_CNT
+	int "Configure maximum number of JTAG devices in the scan chain."
+	depends on DAP_JTAG
+	default 8
+	range 1 255
+
+config DAP_DEFAULT_PORT
+	int
+	default 1 if DAP_DEFAULT_PORT_SWD
+	default 2 if DAP_DEFAULT_PORT_JTAG
+
+config DAP_DEFAULT_PORT_SWD
+	bool "Default to SWD port"
+	depends on DAP_SWD
+	help
+	  Default to SWD port if both SWD and JTAG are supported.
+
+config DAP_DEFAULT_PORT_JTAG
+	bool "Default to JTAG port"
+	depends on DAP_JTAG
+	depends on !DAP_DEFAULT_PORT_SWD
+	help
+	  Default to JTAG port if both SWD and JTAG are supported and SWD is
 
 config DAP_BACKEND_USB_QUEUE
 	bool "USB backend with command queue (CMSIS-DAP Queue Commands)"
@@ -27,12 +51,78 @@ config DAP_BACKEND_USB_QUEUE
 	  DAP USB backend with request/response queues and DAP_QueueCommands (0x7E)
 	  support. Allows multiple packets to be queued before execution.
 
+config DAP_PACKET_SIZE
+	int "Maximum packet size for request and response data."
+	default 64
+	range 64 1024
+	help
+	  This configuration settings is used to optimize the communication performance with the
+	  debugger and depends on the USB peripheral. Typical vales are 64 for Full-speed USB HID or WinUSB,
+	  1024 for High-speed USB HID and 512 for High-speed USB WinUSB.
+
 config DAP_PACKET_COUNT
 	int "Maximum packet buffers for request and response data."
 	default 4
 	range 1 $(UINT8_MAX)
 	help
 	  Maximum packet buffers for request and response data.
+
+config DAP_SWO_UART
+	bool "CMSIS-DAP SWO UART support"
+	help
+	  CMSIS-DAP SWO UART support
+
+config DAP_SWO_MANCHESTER
+	bool "CMSIS-DAP SWO Manchester support"
+	help
+	  CMSIS-DAP SWO Manchester support
+
+config DAP_SWO_BUFFER_SIZE
+	int "CMSIS-DAP SWO buffer size"
+	depends on DAP_SWO_UART || DAP_SWO_MANCHESTER
+	default 4096
+	help
+	  CMSIS-DAP SWO buffer size (must be 2^n)
+
+config DAP_SWO_STREAM
+	bool "CMSIS-DAP SWO Stream support"
+	help
+	  CMSIS-DAP SWO Stream support
+
+config DAP_TIMESTAMP_CLOCK
+	int "Timestamp clock frequency in Hz"
+	depends on DAP_SWO_UART || DAP_SWO_MANCHESTER
+	default 100000000
+	help
+	  Timestamp clock frequency in Hz. This is used to calculate the timestamp values for DAP commands that support timestamping.
+
+config DAP_UART
+	bool "CMSIS-DAP UART support"
+	help
+	  CMSIS-DAP UART support
+
+config DAP_UART_RX_BUFFER_SIZE
+	int "CMSIS-DAP UART RX buffer size"
+	depends on DAP_UART
+	default 1024
+	range 64 4096
+	help
+	  CMSIS-DAP UART RX buffer size. This is used to optimize the communication performance with the debugger.
+
+config DAP_UART_TX_BUFFER_SIZE
+	int "CMSIS-DAP UART TX buffer size"
+	depends on DAP_UART
+	default 1024
+	range 64 4096
+	help
+	  CMSIS-DAP UART TX buffer size. This is used to optimize the communication performance with
+
+config DAP_UART_USB_COM_PORT
+	bool "CMSIS-DAP UART support over USB CDC ACM"
+	depends on DAP_UART
+	depends on USB_DEVICE_STACK_NEXT
+	help
+	  CMSIS-DAP UART support over USB CDC ACM. This allows the DAP implementation to expose a UART interface over USB using the CDC ACM class.
 
 config DAP_PROBE_VENDOR
 	string "Probe vendor"

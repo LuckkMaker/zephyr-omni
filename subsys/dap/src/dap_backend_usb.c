@@ -208,7 +208,7 @@ static int dap_queue_request_handler(struct usbd_class_data *c_data, struct net_
 
 			if (buf->data[0] == ID_DAP_TRANSFER_ABORT) {
 				/* Optional: set DAP_TransferAbort if supported by cmsis_dap.c */
-				//TODO: Set DAP_TransferAbort = 1U;
+				// TODO: Set DAP_TransferAbort = 1U;
 			}
 			k_work_submit(&data->process_work);
 		}

@@ -68,74 +68,79 @@ struct dap_queue_data {
  * @param inst_name USB class instance name
  * @param _dap_ctx Pointer to the bound `struct dap_context`
  */
-#define DAP_BACKEND_USB_DEFINE(inst_name, _dap_ctx)                                         \
-	static struct dap_queue_desc inst_name##_desc = {                                       \
-		.if0 = {                                                                          \
-			.bLength = sizeof(struct usb_if_descriptor),                                \
-			.bDescriptorType = USB_DESC_INTERFACE,                                      \
-			.bInterfaceNumber = 0,                                                      \
-			.bAlternateSetting = 0,                                                     \
-			.bNumEndpoints = 2,                                                         \
-			.bInterfaceClass = USB_BCC_VENDOR,                                          \
-			.bInterfaceSubClass = 0,                                                    \
-			.bInterfaceProtocol = 0,                                                    \
-			.iInterface = 0,                                                            \
-		},                                                                                 \
-		.if0_out_ep = {                                                                   \
-			.bLength = sizeof(struct usb_ep_descriptor),                                \
-			.bDescriptorType = USB_DESC_ENDPOINT,                                       \
-			.bEndpointAddress = 0x01,                                                   \
-			.bmAttributes = USB_EP_TYPE_BULK,                                           \
-			.wMaxPacketSize = sys_cpu_to_le16(64U),                                     \
-			.bInterval = 0x00,                                                          \
-		},                                                                                 \
-		.if0_in_ep = {                                                                    \
-			.bLength = sizeof(struct usb_ep_descriptor),                                \
-			.bDescriptorType = USB_DESC_ENDPOINT,                                       \
-			.bEndpointAddress = 0x81,                                                   \
-			.bmAttributes = USB_EP_TYPE_BULK,                                           \
-			.wMaxPacketSize = sys_cpu_to_le16(64U),                                     \
-			.bInterval = 0x00,                                                          \
-		},                                                                                 \
-		.if0_hs_out_ep = {                                                                \
-			.bLength = sizeof(struct usb_ep_descriptor),                                \
-			.bDescriptorType = USB_DESC_ENDPOINT,                                       \
-			.bEndpointAddress = 0x01,                                                   \
-			.bmAttributes = USB_EP_TYPE_BULK,                                           \
-			.wMaxPacketSize = sys_cpu_to_le16(512),                                     \
-			.bInterval = 0x00,                                                          \
-		},                                                                                 \
-		.if0_hs_in_ep = {                                                                 \
-			.bLength = sizeof(struct usb_ep_descriptor),                                \
-			.bDescriptorType = USB_DESC_ENDPOINT,                                       \
-			.bEndpointAddress = 0x81,                                                   \
-			.bmAttributes = USB_EP_TYPE_BULK,                                           \
-			.wMaxPacketSize = sys_cpu_to_le16(512),                                     \
-			.bInterval = 0x00,                                                          \
-		},                                                                                 \
-		.nil_desc = {.bLength = 0, .bDescriptorType = 0},                               \
-	};                                                                                    \
-	static const struct usb_desc_header *inst_name##_fs_desc[] = {                       \
-		(struct usb_desc_header *)&inst_name##_desc.if0,                              \
-		(struct usb_desc_header *)&inst_name##_desc.if0_out_ep,                       \
-		(struct usb_desc_header *)&inst_name##_desc.if0_in_ep,                        \
-		(struct usb_desc_header *)&inst_name##_desc.nil_desc,                         \
-	};                                                                                    \
-	static const struct usb_desc_header *inst_name##_hs_desc[] = {                       \
-		(struct usb_desc_header *)&inst_name##_desc.if0,                              \
-		(struct usb_desc_header *)&inst_name##_desc.if0_hs_out_ep,                    \
-		(struct usb_desc_header *)&inst_name##_desc.if0_hs_in_ep,                     \
-		(struct usb_desc_header *)&inst_name##_desc.nil_desc,                         \
-	};                                                                                    \
-	USBD_DESC_STRING_DEFINE(inst_name##_iface_str_desc, "CMSIS-DAP v2",                \
-				USBD_DUT_STRING_INTERFACE);                                 \
-	static struct dap_queue_data inst_name##_data = {                                    \
-		.desc = &inst_name##_desc,                                                      \
-		.fs_desc = inst_name##_fs_desc,                                                 \
-		.hs_desc = inst_name##_hs_desc,                                                 \
-		.iface_str_desc_nd = &inst_name##_iface_str_desc,                               \
-		.dap_ctx = (_dap_ctx),                                                       \
-	};                                                                                    \
+#define DAP_BACKEND_USB_DEFINE(inst_name, _dap_ctx)                                                \
+	static struct dap_queue_desc inst_name##_desc = {                                          \
+		.if0 =                                                                             \
+			{                                                                          \
+				.bLength = sizeof(struct usb_if_descriptor),                       \
+				.bDescriptorType = USB_DESC_INTERFACE,                             \
+				.bInterfaceNumber = 0,                                             \
+				.bAlternateSetting = 0,                                            \
+				.bNumEndpoints = 2,                                                \
+				.bInterfaceClass = USB_BCC_VENDOR,                                 \
+				.bInterfaceSubClass = 0,                                           \
+				.bInterfaceProtocol = 0,                                           \
+				.iInterface = 0,                                                   \
+			},                                                                         \
+		.if0_out_ep =                                                                      \
+			{                                                                          \
+				.bLength = sizeof(struct usb_ep_descriptor),                       \
+				.bDescriptorType = USB_DESC_ENDPOINT,                              \
+				.bEndpointAddress = 0x01,                                          \
+				.bmAttributes = USB_EP_TYPE_BULK,                                  \
+				.wMaxPacketSize = sys_cpu_to_le16(64U),                            \
+				.bInterval = 0x00,                                                 \
+			},                                                                         \
+		.if0_in_ep =                                                                       \
+			{                                                                          \
+				.bLength = sizeof(struct usb_ep_descriptor),                       \
+				.bDescriptorType = USB_DESC_ENDPOINT,                              \
+				.bEndpointAddress = 0x81,                                          \
+				.bmAttributes = USB_EP_TYPE_BULK,                                  \
+				.wMaxPacketSize = sys_cpu_to_le16(64U),                            \
+				.bInterval = 0x00,                                                 \
+			},                                                                         \
+		.if0_hs_out_ep =                                                                   \
+			{                                                                          \
+				.bLength = sizeof(struct usb_ep_descriptor),                       \
+				.bDescriptorType = USB_DESC_ENDPOINT,                              \
+				.bEndpointAddress = 0x01,                                          \
+				.bmAttributes = USB_EP_TYPE_BULK,                                  \
+				.wMaxPacketSize = sys_cpu_to_le16(512),                            \
+				.bInterval = 0x00,                                                 \
+			},                                                                         \
+		.if0_hs_in_ep =                                                                    \
+			{                                                                          \
+				.bLength = sizeof(struct usb_ep_descriptor),                       \
+				.bDescriptorType = USB_DESC_ENDPOINT,                              \
+				.bEndpointAddress = 0x81,                                          \
+				.bmAttributes = USB_EP_TYPE_BULK,                                  \
+				.wMaxPacketSize = sys_cpu_to_le16(512),                            \
+				.bInterval = 0x00,                                                 \
+			},                                                                         \
+		.nil_desc = {.bLength = 0, .bDescriptorType = 0},                                  \
+	};                                                                                         \
+	static const struct usb_desc_header *inst_name##_fs_desc[] = {                             \
+		(struct usb_desc_header *)&inst_name##_desc.if0,                                   \
+		(struct usb_desc_header *)&inst_name##_desc.if0_out_ep,                            \
+		(struct usb_desc_header *)&inst_name##_desc.if0_in_ep,                             \
+		(struct usb_desc_header *)&inst_name##_desc.nil_desc,                              \
+	};                                                                                         \
+	static const struct usb_desc_header *inst_name##_hs_desc[] = {                             \
+		(struct usb_desc_header *)&inst_name##_desc.if0,                                   \
+		(struct usb_desc_header *)&inst_name##_desc.if0_hs_out_ep,                         \
+		(struct usb_desc_header *)&inst_name##_desc.if0_hs_in_ep,                          \
+		(struct usb_desc_header *)&inst_name##_desc.nil_desc,                              \
+	};                                                                                         \
+	USBD_DESC_STRING_DEFINE(inst_name##_iface_str_desc, "CMSIS-DAP v2",                        \
+				USBD_DUT_STRING_INTERFACE);                                        \
+	static struct dap_queue_data inst_name##_data = {                                          \
+		.desc = &inst_name##_desc,                                                         \
+		.fs_desc = inst_name##_fs_desc,                                                    \
+		.hs_desc = inst_name##_hs_desc,                                                    \
+		.iface_str_desc_nd = &inst_name##_iface_str_desc,                                  \
+		.dap_ctx = (_dap_ctx),                                                             \
+	};                                                                                         \
 	USBD_DEFINE_CLASS(inst_name, &dap_queue_api, &inst_name##_data, NULL)
 
 #endif /* ZEPHYR_INCLUDE_DAP_BACKEND_USB_H_ */
