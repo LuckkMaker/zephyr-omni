@@ -131,6 +131,36 @@ static uint8_t dap_info(struct dap_context *const ctx, const uint8_t *request, u
 	return length;
 }
 
+static uint32_t dap_host_status(struct dap_context *const ctx, const uint8_t *request,
+				uint8_t *response)
+{
+	switch (*request) {
+	case DAP_DEBUGGER_CONNECTED:
+		if ((*request + 1) & 1U) {
+			LOG_DBG("Debugger connected");
+			if (ctx->msg_cb != NULL) {
+				ctx->msg_cb(ctx, DAP_MSG_CONNECTED);
+			}
+		}
+		break;
+	case DAP_TARGET_RUNNING:
+		if ((*request + 1) & 1U) {
+			LOG_DBG("Target running");
+			if (ctx->msg_cb != NULL) {
+				ctx->msg_cb(ctx, DAP_MSG_RUNNING);
+			}
+		}
+		break;
+	default:
+		LOG_ERR("Unknown Host Status ID: 0x%02X", *request);
+		*response = DAP_ERROR;
+		return ((2U << 16) | 1U);
+	}
+
+	*response = DAP_OK;
+	return ((2U << 16) | 1U);
+}
+
 /**
  * @brief Process DAP command request and prepare response
  *
@@ -236,6 +266,20 @@ int dap_ser_num_str_register_cb(struct dap_context *const ctx, const dap_serial_
 	}
 
 	ctx->ser_num_str_cb = cb;
+
+	return ret;
+}
+
+int dap_msg_register_cb(struct dap_context *const ctx, const dap_msg_cb_t cb)
+{
+	int ret = 0;
+
+	if (ctx->msg_cb != NULL) {
+		LOG_ERR("DAP message callback already registered");
+		return -EALREADY;
+	}
+
+	ctx->msg_cb = cb;
 
 	return ret;
 }

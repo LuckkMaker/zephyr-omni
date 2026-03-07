@@ -14,6 +14,10 @@
 /* DAP Firmware Version */
 #define DAP_FW_VER "2.1.2"
 
+/* DAP Status Code */
+#define DAP_OK    0U
+#define DAP_ERROR 0xFFU
+
 /* DAP Command IDs */
 #define ID_DAP_INFO                0x00U
 #define ID_DAP_HOST_STATUS         0x01U
@@ -214,6 +218,16 @@
 #define SWD_SEQUENCE_CLK 0x3FU // SWCLK count
 #define SWD_SEQUENCE_DIN 0x80U // SWDIO capture
 
+/**
+ * @brief DAP supported message types
+ */
+enum dap_msg_type {
+	/** Debugger connected message */
+	DAP_MSG_CONNECTED,
+	/** Debugger running message */
+	DAP_MSG_RUNNING,
+};
+
 struct dap_context;
 
 /**
@@ -228,7 +242,15 @@ struct dap_context;
 typedef uint32_t (*dap_vendor_cmd_cb_t)(struct dap_context *const ctx, const uint8_t *request,
 					uint8_t *response);
 
+/**
+ * @brief Callback type definition for DAP serial number string provider
+ *
+ * @param ctx Pointer to DAP context
+ * @return Pointer to a null-terminated string containing the serial number
+ */
 typedef uint8_t *(*dap_serial_number_str_cb_t)(struct dap_context *const ctx);
+
+typedef void (*dap_msg_cb_t)(struct dap_context *const ctx, enum dap_msg_type msg);
 
 struct dap_context {
 	/** Name of the DAP device */
@@ -241,6 +263,8 @@ struct dap_context {
 	dap_vendor_cmd_cb_t vendor_cmd_cb;
 	/** Serial number string callback */
 	dap_serial_number_str_cb_t ser_num_str_cb;
+	/** DAP message callback */
+	dap_msg_cb_t msg_cb;
 	atomic_t state;
 	uint8_t debug_port;          // Debug Port
 	uint16_t capabilities;       // Capabilities
@@ -281,8 +305,8 @@ struct dap_context {
  *
  * @code{.c}
  * DAP_DEFINE(sample_dap,
- *			  DEVICE_DT_GET(DT_NODELABEL(swdp)),
- *			  DEVICE_DT_GET(DT_NODELABEL(jtagdp)));
+ *        DEVICE_DT_GET(DT_NODELABEL(swdp)),
+ *        DEVICE_DT_GET(DT_NODELABEL(jtagdp)));
  * @endcode
  *
  * @param device_name DAP context name
@@ -296,6 +320,7 @@ struct dap_context {
 
 int dap_vendor_cmd_register_cb(struct dap_context *const ctx, const dap_vendor_cmd_cb_t cb);
 int dap_ser_num_str_register_cb(struct dap_context *const ctx, const dap_serial_number_str_cb_t cb);
+int dap_msg_register_cb(struct dap_context *const ctx, const dap_msg_cb_t cb);
 int dap_setup(struct dap_context *const ctx);
 void dap_update_pkt_size(struct dap_context *const ctx, const uint16_t pkt_size);
 uint32_t dap_execute_command(struct dap_context *const ctx, const uint8_t *request,
