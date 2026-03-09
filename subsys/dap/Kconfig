@@ -33,6 +33,7 @@ config DAP_DEFAULT_PORT
 
 config DAP_DEFAULT_PORT_SWD
 	bool "Default to SWD port"
+	default y if DAP_SWD
 	depends on DAP_SWD
 	help
 	  Default to SWD port if both SWD and JTAG are supported.
