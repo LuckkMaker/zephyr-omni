@@ -449,6 +449,55 @@ static uint32_t dap_transfer_configure(struct dap_context *const ctx, const uint
 	return ((5U << 16) | 1U);
 }
 
+static inline uint8_t do_swdp_transfer(struct dap_context *const ctx, const uint8_t req_val,
+				       uint32_t *data)
+{
+	const struct swdp_api *api = ctx->swdp_dev->api;
+	uint32_t retry = ctx->transfer.retry_count;
+	uint8_t rspns_val;
+
+	do {
+		api->swdp_transfer(ctx->swdp_dev, req_val, data, ctx->transfer.idle_cycles,
+				   &rspns_val);
+	} while ((rspns_val == SWDP_ACK_WAIT) && retry--);
+
+	return rspns_val;
+}
+
+static uint8_t swdp_transfer_match(struct dap_context *const ctx, const uint8_t req_val,
+				   const uint32_t match_val)
+{
+	uint32_t match_retry = ctx->transfer.match_retry;
+	uint32_t data;
+	uint8_t rspns_val;
+
+	if (req_val & SWDP_REQUEST_APnDP) {
+		/* Post AP read, result will be returned on the next transfer */
+		rspns_val = do_swdp_transfer(ctx, req_val, NULL);
+		if (rspns_val != SWDP_ACK_OK) {
+			return rspns_val;
+		}
+	}
+
+	do {
+		/*
+		 * Read register until its value matches
+		 * or retry counter expires
+		 */
+		rspns_val = do_swdp_transfer(ctx, req_val, &data);
+		if (rspns_val != SWDP_ACK_OK) {
+			return rspns_val;
+		}
+
+	} while (((data & ctx->transfer.match_mask) != match_val) && match_retry--);
+
+	if ((data & ctx->transfer.match_mask) != match_val) {
+		rspns_val |= DAP_TRANSFER_MISMATCH;
+	}
+
+	return rspns_val;
+}
+
 static uint32_t dap_swd_transfer(struct dap_context *const ctx, const uint8_t *request,
 				 uint8_t *response)
 {
@@ -601,7 +650,7 @@ end:
 static uint32_t dap_dummy_transfer(struct dap_context *const ctx, const uint8_t *request,
 				   uint8_t *response)
 {
-	uint8_t *request_head;
+	const uint8_t *request_head;
 	uint32_t request_count;
 	uint32_t request_value;
 
@@ -635,7 +684,7 @@ static uint32_t dap_dummy_transfer(struct dap_context *const ctx, const uint8_t 
 static uint32_t dap_transfer(struct dap_context *const ctx, const uint8_t *request,
 			     uint8_t *response)
 {
-	uint32_t ret;
+	uint32_t ret = 0;
 
 	if (atomic_test_bit(&ctx->state, DAP_STATE_CONNECTED)) {
 		switch (ctx->debug_port) {
@@ -654,6 +703,183 @@ static uint32_t dap_transfer(struct dap_context *const ctx, const uint8_t *reque
 	return ret;
 }
 
+/*
+ * Process SWD DAP_TransferBlock command and prepare response.
+ * pyOCD counterpart is _encode_transfer_block_data.
+ * Packet format: one byte DAP_index (ignored)
+ *                two bytes transfer_count
+ *                one byte block_request (register)
+ *                data[transfer_count * sizeof(uint32_t)]
+ */
+static uint16_t dap_swdp_transferblock(struct dap_context *const ctx, const uint8_t *const request,
+				       uint8_t *const response)
+{
+	uint32_t data;
+	uint8_t *rspns_buf;
+	const uint8_t *req_buf;
+	uint16_t rspns_cnt = 0;
+	uint16_t req_cnt;
+	uint8_t rspns_val = 0;
+	uint8_t req_val;
+
+	req_cnt = sys_get_le16(&request[1]);
+	req_val = request[3];
+	req_buf = request + (sizeof(req_cnt) + sizeof(req_val) + 1);
+	rspns_buf = response + (sizeof(rspns_cnt) + sizeof(rspns_val));
+
+	if (req_cnt == 0U) {
+		goto end;
+	}
+
+	if (req_val & SWDP_REQUEST_RnW) {
+		/* Read register block */
+		if (req_val & SWDP_REQUEST_APnDP) {
+			/* Post AP read */
+			rspns_val = do_swdp_transfer(ctx, req_val, NULL);
+			if (rspns_val != SWDP_ACK_OK) {
+				goto end;
+			}
+		}
+
+		while (req_cnt--) {
+			/* Read DP/AP register */
+			if ((req_cnt == 0U) && (req_val & SWDP_REQUEST_APnDP)) {
+				/* Last AP read */
+				req_val = DP_RDBUFF | SWDP_REQUEST_RnW;
+			}
+
+			rspns_val = do_swdp_transfer(ctx, req_val, &data);
+			if (rspns_val != SWDP_ACK_OK) {
+				goto end;
+			}
+
+			/* Store data */
+			sys_put_le32(data, rspns_buf);
+			rspns_buf += sizeof(data);
+			rspns_cnt++;
+		}
+	} else {
+		/* Write register block */
+		while (req_cnt--) {
+			/* Load data */
+			data = sys_get_le32(req_buf);
+			req_buf += sizeof(data);
+			/* Write DP/AP register */
+			rspns_val = do_swdp_transfer(ctx, req_val, &data);
+			if (rspns_val != SWDP_ACK_OK) {
+				goto end;
+			}
+
+			rspns_cnt++;
+		}
+		/* Check last write */
+		rspns_val = do_swdp_transfer(ctx, DP_RDBUFF | SWDP_REQUEST_RnW, NULL);
+	}
+
+end:
+	sys_put_le16(rspns_cnt, &response[0]);
+	response[2] = rspns_val;
+
+	LOG_DBG("Received %u, to transmit %u, response count %u", req_buf - request,
+		rspns_buf - response, rspns_cnt * 4);
+
+	return (rspns_buf - response);
+}
+
+static uint32_t dap_transfer_block(struct dap_context *const ctx, const uint8_t *request,
+				   uint8_t *response)
+{
+	uint32_t ret = 0;
+
+	if (atomic_test_bit(&ctx->state, DAP_STATE_CONNECTED)) {
+		switch (ctx->debug_port) {
+#if (CONFIG_DAP_SWD != 0U)
+		case DAP_PORT_SWD:
+			ret = dap_swdp_transferblock(ctx, request, response);
+			break;
+#endif
+#if (CONFIG_DAP_JTAG != 0U)
+		case DAP_PORT_JTAG:
+			ret = dap_jtag_transferblock(ctx, request, response);
+			break;
+#endif
+		default:
+			LOG_ERR("port unsupported");
+			/* Clear response count */
+			sys_put_le16(0U, &response[0]);
+			/* Clear DAP response (ACK) value */
+			response[2] = 0U;
+			ret = 3U;
+			break;
+		}
+	} else {
+		LOG_ERR("DAP device is not connected");
+		/* Clear response count */
+		sys_put_le16(0U, &response[0]);
+		/* Clear DAP response (ACK) value */
+		response[2] = 0U;
+		return 3U;
+	}
+
+	if ((*(response + 3) & DAP_TRANSFER_RnW) != 0U) {
+		/* Read register block */
+		ret |= 4U << 16;
+	} else {
+		/* Write register */
+		ret |= (4U + (((uint32_t)(*(request + 1)) | (uint32_t)(*(request + 2) << 8)) * 4))
+		       << 16;
+	}
+
+	return ret;
+}
+
+/* Process SWD Write ABORT command and prepare response */
+static uint16_t dap_swdp_write_abort(struct dap_context *const ctx, const uint8_t *const request,
+				     uint8_t *const response)
+{
+	const struct swdp_api *api = ctx->swdp_dev->api;
+	/* Load data (Ignore DAP index in request[0]) */
+	uint32_t data = sys_get_le32(&request[1]);
+
+	/* Write Abort register */
+	api->swdp_transfer(ctx->swdp_dev, DP_ABORT, &data, ctx->transfer.idle_cycles, NULL);
+
+	response[0] = DAP_OK;
+	return 1U;
+}
+
+static uint32_t dap_write_abort(struct dap_context *const ctx, const uint8_t *request,
+				uint8_t *response)
+{
+	uint32_t ret;
+
+	if (atomic_test_bit(&ctx->state, DAP_STATE_CONNECTED)) {
+		switch (ctx->debug_port) {
+#if (CONFIG_DAP_SWD != 0U)
+		case DAP_PORT_SWD:
+			ret = dap_swdp_write_abort(ctx, request, response);
+			break;
+#endif
+#if (CONFIG_DAP_JTAG != 0U)
+		case DAP_PORT_JTAG:
+			ret = dap_jtag_write_abort(ctx, request, response);
+			break;
+#endif
+		default:
+			LOG_ERR("port unsupported");
+			*response = DAP_ERROR;
+			ret = 1U;
+			break;
+		}
+	} else {
+		LOG_ERR("DAP device is not connected");
+		*response = DAP_ERROR;
+		return 1U;
+	}
+
+	return ((5U << 16) | ret);
+}
+
 /**
  * @brief Process DAP command request and prepare response
  *
@@ -666,7 +892,7 @@ static uint32_t dap_transfer(struct dap_context *const ctx, const uint8_t *reque
 static uint32_t dap_process_command(struct dap_context *const ctx, const uint8_t *request,
 				    uint8_t *response)
 {
-	uint32_t ret;
+	uint32_t ret = 0;
 
 	LOG_HEXDUMP_DBG(request, 8, "DAP Command Request");
 
@@ -738,6 +964,12 @@ static uint32_t dap_process_command(struct dap_context *const ctx, const uint8_t
 		break;
 	case ID_DAP_TRANSFER:
 		ret = dap_transfer(ctx, request, response);
+		break;
+	case ID_DAP_TRANSFER_BLOCK:
+		ret = dap_transfer_block(ctx, request, response);
+		break;
+	case ID_DAP_WRITE_ABORT:
+		ret = dap_write_abort(ctx, request, response);
 		break;
 
 	default:
