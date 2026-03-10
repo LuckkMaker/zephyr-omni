@@ -1,3 +1,6 @@
 [submodule "examples"]
 	path = examples
 	url = https://github.com/LuckkMaker/zephyr-examples
+[submodule "boards"]
+	path = boards
+	url = https://github.com/LuckkMaker/zephyr-boards
