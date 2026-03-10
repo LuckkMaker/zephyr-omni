@@ -4,5 +4,5 @@ build:
   cmake: .
   kconfig: Kconfig
   settings:
-    board_root: ../boards
-    dts_root: ../dts
+    board_root: boards
+    dts_root: dts
