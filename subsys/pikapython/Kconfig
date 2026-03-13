@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 LuckkMaker
+
+menuconfig OMNI_PIKAPYTHON
+	bool "PikaPython support [EXPERIMENTAL]"
+	select EXPERIMENTAL
+	help
+	    PikaPython support for embedded devices.
+
+if OMNI_PIKAPYTHON
+
+config PIKAPYTHON_TEST
+	bool "PikaPython test support"
+	help
+	    Support for running PikaPython tests.
+
+config PIKAPYTHON_TIME
+	bool "PikaPython time module support"
+	help
+	    Support for the time module in PikaPython.
+
+module = PIKAPYTHON
+module-str = pikapython
+source "$(ZEPHYR_BASE)/subsys/logging/Kconfig.template.log_config"
+
+endif # OMNI_PIKAPYTHON

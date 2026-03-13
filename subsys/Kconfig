@@ -4,5 +4,6 @@
 menu "Subsystems and OS Services"
 
 rsource "dap/Kconfig"
+rsource "pikapython/Kconfig"
 
 endmenu

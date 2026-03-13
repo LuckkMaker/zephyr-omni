@@ -4,3 +4,4 @@
 #
 
 add_subdirectory_ifdef(CONFIG_OMNI_DAP dap)
+add_subdirectory_ifdef(CONFIG_OMNI_PIKAPYTHON pikapython)
