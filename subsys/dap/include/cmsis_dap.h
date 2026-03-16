@@ -90,10 +90,6 @@
 
 #define ID_DAP_INVALID 0xFFU
 
-/* DAP Status Code */
-#define DAP_OK    0U
-#define DAP_ERROR 0xFFU
-
 /* DAP ID */
 #define DAP_ID_VENDOR              1U
 #define DAP_ID_PRODUCT             2U
